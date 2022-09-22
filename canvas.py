@@ -2,31 +2,54 @@ import requests
 import string
 import json
 
-headers = {
-    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36',
-    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'
-}
 
+with open('settings.json') as json_file:
+    settings = json.load(json_file)
 
 class Canvas:
     def __init__(self):
-        self.access_token = "3165~ClzFgg1KPHRtpGdPo9X5BZcM2uF204q6oNOo0ProkSvlGke7sJ5Q6cfMksQ8Onv9" # define access token, can get through canvas settings
-        self.headers = {"Authorization": "Bearer " + self.access_token} # authorization header
+        self.access_tokens = settings["access_tokens"] # define access token, can create through canvas settings
     
     def get_courses(self):
-        url = "https://canvas.instructure.com/api/v1/courses"
-        r = requests.get(url, headers=self.headers).json()
-        # returns courses in dictionary formatted courseID : courseName
-        return {str(item["id"])[-5:] : item["name"] for item in r}
+        courses = {}
 
+        for token in self.access_tokens:
+            self.headers = {"Authorization": "Bearer " + token}
+            url = "https://canvas.instructure.com/api/v1/courses?include[]=favorites"
+            r = requests.get(url, headers=self.headers).json() # get all courses for specific acccess token
+            for item in r: courses[(str(item["id"])[-5:])] = item["name"] # add to dictionary
+
+        # returns courses in dictionary formatted courseID : courseName
+        return courses
     
     def get_grades(self):
-        url = "https://canvas.instructure.com/api/v1/users/self/favorites/courses?include[]=total_scores&include[]=favorites"
-        grades = requests.get(url, headers=self.headers).json()
-        # returns Grades with formatt courseName: currentGrade
-        return {item["name"]: item['enrollments'][0]['computed_current_score'] for item in grades if item['enrollments'][0]['computed_current_score'] != None}, 
+
+        gradeList = {}
+
+        for token in self.access_tokens:
+            self.headers = {"Authorization": "Bearer " + token}
+            url = "https://canvas.instructure.com/api/v1/users/self/favorites/courses?include[]=total_scores&include[]=favorites"
+            grades = requests.get(url, headers=self.headers).json()
+            # returns Grades with formatt courseName: currentGrade
+            for item in grades:
+                if item['enrollments'][0]['computed_current_score'] != None: # checks to make sure that you have a current grade in that course: 
+                    gradeList[item["name"]] = item['enrollments'][0]['computed_current_score']
+        
+        return gradeList
+            # return {item["name"]: item['enrollments'][0]['computed_current_score'] for item in grades if item['enrollments'][0]['computed_current_score'] != None}, 
     
-    # WORK IN PROGRESS
+    # WORK IN PROGRESS (braindead API)
+    # def toDoList(self, courses):
+    #     toDoList = {}
+    #     token = self.access_tokens[1]
+    #     self.headers = {"Authorization": "Bearer " + token}
+    #     for courseID in courses.keys():
+    #         url = f"https://canvas.instructure.com//api/v1/courses/{courseID}/todo"
+    #         toDo = requests.get(url, headers=self.headers).json()
+    #         print(toDo)
+        
+
+    # WORK IN PROGRESS (braindead)
     # def list_assignements(self, courses):
     #     courseList = courses.keys()
     #     for courseID in courseList:
@@ -38,4 +61,3 @@ class Canvas:
 Canvas = Canvas()
 courses = Canvas.get_courses() # returns dictionary of courseID : courseName
 grades = Canvas.get_grades() # returns a dictionary of courseName: currentGrade
-
