@@ -20,6 +20,7 @@ class Canvas:
             for item in r: courses[(str(item["id"])[-5:])] = item["name"] # add to dictionary
 
         # returns courses in dictionary formatted courseID : courseName
+
         return courses
     
     def get_grades(self):
@@ -30,13 +31,13 @@ class Canvas:
             self.headers = {"Authorization": "Bearer " + token}
             url = "https://canvas.instructure.com/api/v1/users/self/favorites/courses?include[]=total_scores&include[]=favorites"
             grades = requests.get(url, headers=self.headers).json()
-            # returns Grades with formatt courseName: currentGrade
+
             for item in grades:
                 if item['enrollments'][0]['computed_current_score'] != None: # checks to make sure that you have a current grade in that course: 
                     gradeList[item["name"]] = item['enrollments'][0]['computed_current_score']
         
+        # returns Grades with formatt courseName: currentGrade
         return gradeList
-            # return {item["name"]: item['enrollments'][0]['computed_current_score'] for item in grades if item['enrollments'][0]['computed_current_score'] != None}, 
     
     # WORK IN PROGRESS (braindead API)
     # def toDoList(self, courses):
