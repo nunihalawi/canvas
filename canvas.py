@@ -1,6 +1,7 @@
 import requests
 import string
 import json
+import discord
 
 headers = {
     'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36',
@@ -21,6 +22,10 @@ class Canvas:
         headers = {"Authorization": "Bearer " + self.access_token}
         r = requests.get(url, headers=headers)
         return r.json()
+    
+    def parse_grades(self, grades):
+        return {item["name"]: item['enrollments'][0]['computed_current_score'] for item in grades if item['enrollments'][0]['computed_current_score'] != None}
+
 
 # print events
-print(json.dumps(Canvas().get_grades(), indent=4))
+print(Canvas().parse_grades(Canvas().get_grades()))
