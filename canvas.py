@@ -6,6 +6,9 @@ import json
 with open('settings.json') as json_file:
     settings = json.load(json_file)
 
+with open('grades.json') as json_file:
+    grades = json.load(json_file)
+
 class Canvas:
     def __init__(self):
         self.access_tokens = settings["access_tokens"] # define access token, can create through canvas settings
@@ -37,7 +40,26 @@ class Canvas:
                     gradeList[item["name"]] = item['enrollments'][0]['computed_current_score']
         
         # returns Grades with formatt courseName: currentGrade
+
         return gradeList
+    
+    def dump_to_grades_json(self, grades):
+        with open('grades.json', 'w') as outfile:
+            json.dump(grades, outfile, indent=4)
+
+    def poll_for_updates(self): # essentially checking if a grade has changed by poling and cross-referencing with our last result
+        while True:
+            gradeList = self.get_grades() # get the current grades
+            for course in gradeList: # access the "old" grades that we got before that are stored in grades.json
+                if course in grades: # if the course is in the json file
+                    if gradeList[course] != grades[course]: # if their is a discrepancy between the old and new grades; change the grade in the json file and print the change
+                        print(f"Grade for {course} has changed from {grades[course]} % to {gradeList[course]} %")
+                        grades[course] = gradeList[course]
+                        self.dump_to_grades_json(grades)
+                elif course not in grades: # if the course is not in the json file altogether, add it to the json file and print the change
+                    print(f"New course added: {course} | Grade: {gradeList[course]}")
+                    grades[course] = gradeList[course]
+                    self.dump_to_grades_json(grades)
     
     # WORK IN PROGRESS (braindead API)
     # def toDoList(self, courses):
@@ -62,3 +84,4 @@ class Canvas:
 Canvas = Canvas()
 courses = Canvas.get_courses() # returns dictionary of courseID : courseName
 grades = Canvas.get_grades() # returns a dictionary of courseName: currentGrade
+poll = Canvas.poll_for_updates() # polls for changes in grades and prints them out 
